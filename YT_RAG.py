@@ -52,8 +52,8 @@ except Exception as e:
 
 
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size = 1000,
-    chunk_overlap = 200
+    chunk_size = 1500,
+    chunk_overlap = 400
 )
 chunks = splitter.create_documents([transcript])
 
@@ -63,7 +63,7 @@ vector_store = FAISS.from_documents(chunks, embedding)
 
 parser = StrOutputParser()
 
-llm = ChatGoogleGenerativeAI(model='gemini-2.0-flash', temperature=0.2)
+llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash')
 
 # Contextual Compression: Use a component like LangChain's Contextual Compression (e.g., LLMChainExtractor) to prune the retrieved chunks, removing sentences that are irrelevant to the specific user question before sending them to the final LLM prompt. This drastically reduces noise and improves LLM focus.
 # compressor = LLMChainExtractor.from_llm(llm=llm)
@@ -78,7 +78,7 @@ llm = ChatGoogleGenerativeAI(model='gemini-2.0-flash', temperature=0.2)
 #     base_retriever=base_retriever
 # )
 
-retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k":4, "lambda_mult":0.7})
+retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k":6, "lambda_mult":0.9})
 
 def format_docs(retrieved_docs):
     context_text = "\n\n".join(doc.page_content for doc in retrieved_docs)
@@ -124,7 +124,6 @@ while True:
     
     try:
         # The invocation point where most errors will occur
-        response = chain.invoke(query)
         print(f'AI: {chain.invoke(query)}\n---------------------------------------------------------------------\n')
 
     except ResourceExhausted:

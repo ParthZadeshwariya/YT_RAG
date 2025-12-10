@@ -119,7 +119,7 @@ How does it work under the hood?
     - Your question is embedded into a vector.
     - We search the FAISS index for the most relevant transcript chunks.
     - We use **MMR** to select chunks that are relevant but not redundant.
-6.  **Generation**: The relevant chunks + your question are sent to **Gemini 1.5 Flash** with a strict prompt: *"Answer only based on this context"*.
+6.  **Generation**: The relevant chunks + your question are sent to **Gemini 2.5 Flash** with a strict prompt: *"Answer only based on this context"*.
 7.  **Response**: The AI generates the answer, which is sent back to the user.
 
 ---

@@ -4,6 +4,9 @@
 > **Chat with any YouTube video.**
 > *A powerful Retrieval-Augmented Generation (RAG) tool that turns YouTube videos into interactive knowledge bases.*
 
+**[🚀 Try the Live App](https://yt-rag-frontend-830279091791.asia-south1.run.app)**
+
+
 ![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![Python](https://img.shields.io/badge/Python-3.8+-blue)
 ![React](https://img.shields.io/badge/React-19.0-61DAFB)
@@ -27,7 +30,7 @@ This project implements a full **RAG (Retrieval-Augmented Generation)** pipeline
   - Implements **MMR (Maximal Marginal Relevance)** search to ensure diverse and relevant context retrieval.
   - Efficient vector storage with **FAISS**.
 - 🚀 **Dual Interface**:
-  - **Modern Web App**: Built with React and Vite for a premium user experience.
+  - **Modern Web App**: Built with React and Vite for a premium user experience. **[Live Demo](https://yt-rag-frontend-830279091791.asia-south1.run.app)**
   - **CLI Tool**: Lightweight terminal version for quick queries.
 - ⚡ **Real-time Processing**: Streamlined pipeline for fast ingestion and response times.
 
@@ -128,7 +131,6 @@ YT_RAG/
 │   ├── public/            # Static assets
 │   └── package.json       # Frontend dependencies
 ├── README.md              # Project documentation
-├── TODO.md                # Project roadmap and tasks
 └── .gitignore             # Global git exclusions
 ```
 

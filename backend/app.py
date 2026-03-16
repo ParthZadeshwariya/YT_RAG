@@ -17,8 +17,8 @@ app = FastAPI(title="YT RAG Assistant API")
 # Setup CORS, adjust origins for production if needed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In development, allow all. Make restrictive in production
-    allow_credentials=True,
+    allow_origins=["https://yt-rag-frontend-830279091791.asia-south1.run.app"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

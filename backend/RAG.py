@@ -2,14 +2,12 @@
 import os
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
 from urllib.parse import urlparse, parse_qs
 from google.api_core.exceptions import ResourceExhausted, DeadlineExceeded, Aborted
 from dotenv import load_dotenv
@@ -42,10 +40,12 @@ def load_dependencies():
     
     # Initialize the LLM and Embedding Model once
     llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash')
-    embedding = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embedding = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     
     return llm, embedding
 
+from requests import Session
+    
 def process_transcript(video_link):
     """Fetches the transcript and splits it into LangChain documents (chunks)."""
     video_id = get_youtube_video_id(video_link)
@@ -56,14 +56,28 @@ def process_transcript(video_link):
         return None
 
     try:
-        # Fetching the transcript data
-        fetched_transcript = YouTubeTranscriptApi().fetch(video_id, languages=['en', 'hi'])
+        # Create a session with custom headers to prevent IP Blocks (429 Too Many Requests)
+        http_client = Session()
+        http_client.headers.update({
+            "Accept-Language": "en-US,en;q=0.5",
+        })
+        ytt_api = YouTubeTranscriptApi(http_client=http_client)
+        
+        # Fetching the transcript data safely
+        transcript_list_obj = ytt_api.list(video_id)
+        
+        # Try to find English or Hindi, otherwise use any available one
+        try:
+            transcript_obj = transcript_list_obj.find_transcript(['en', 'en-US', 'hi'])
+        except:
+            transcript_obj = [t for t in transcript_list_obj][0]
+            
+        # We DO NOT translate via YouTube API anymore to avoid 429 Too Many Requests.
+        # The LLM (Gemini) handles the original language text perfectly well.
+        fetched_transcript = transcript_obj.fetch()
         transcript_list = fetched_transcript.to_raw_data()
         transcript = " ".join(chunk["text"] for chunk in transcript_list)
         
-    except TranscriptsDisabled:
-        print("No captions available for this video.")
-        return None
     except Exception as e:
         print(f"An error occurred during transcript fetching: {e}")
         return None
@@ -92,21 +106,7 @@ def setup_rag_chain(transcript_chunks, llm, embedding):
     # Create Vector Store
     vector_store = FAISS.from_documents(transcript_chunks, embedding)
     parser = StrOutputParser()
-    
-    # Setup Retriever (using your current MMR settings)
-    
-    # Contextual Compression: Use a component like LangChain's Contextual Compression (e.g., LLMChainExtractor) to prune the retrieved chunks, removing sentences that are irrelevant to the specific user question before sending them to the final LLM prompt. This drastically reduces noise and improves LLM focus.
-    # compressor = LLMChainExtractor.from_llm(llm=llm)
 
-    # base_retriever = vector_store.as_retriever(
-    #     search_type="mmr", 
-    #     search_kwargs={"k": 6, "lambda_mult": 0.7} 
-    # )
-
-    # retriever = ContextualCompressionRetriever(
-    #     base_compressor=compressor, 
-    #     base_retriever=base_retriever
-    # )
     
     retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k":6, "lambda_mult":0.9})
     
@@ -115,7 +115,7 @@ def setup_rag_chain(transcript_chunks, llm, embedding):
         template = """
             You are an expert Q&A assistant who specializes in summarizing technical transcripts.
             Your answer **must** be entirely based** on the provided context below.
-            If the context does not contain the answer, you **must** respond with "I cannot find the answer in the video."
+            If the context does not contain the answer, you **must** respond with "I cannot find the answer in the video but ..." then answer the question based on your knowledge.
             Elaborate your answer a bit, using a clear and professional tone.
             ---
             CONTEXT:

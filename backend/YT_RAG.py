@@ -1,13 +1,11 @@
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
 from urllib.parse import urlparse, parse_qs
 from google.api_core.exceptions import ResourceExhausted, DeadlineExceeded, Aborted
 from dotenv import load_dotenv
@@ -37,19 +35,15 @@ video_link = input("enter video link: ")
 video_id = get_youtube_video_id(video_link)
 
 try:
-    fetched_transcript = YouTubeTranscriptApi().fetch(video_id, languages=['en', 'hi'])
+    fetched_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'hi'])
     transcript_list = fetched_transcript.to_raw_data()
     transcript = " ".join(chunk["text"] for chunk in transcript_list)
-    # print(transcript)
+    print(transcript)
    
 except TranscriptsDisabled:
     print("No captions available for this video.")
 except Exception as e:
     print(f"An error occurred: {e}")
-
-
-
-
 
 splitter = RecursiveCharacterTextSplitter(
     chunk_size = 1500,
